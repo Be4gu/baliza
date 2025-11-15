@@ -512,8 +512,9 @@ async function startServer() {
 
     // Inicializar y empezar servicios de cron
     await cronService.init()
-    // cronService.startScrapingJob() // TEMPORAL: Desactivado para testing
-    // cronService.startBalizaUpdateJob() // TEMPORAL: Desactivado para testing
+    console.log('🚀 Iniciando servicios de scraping automáticos...')
+    cronService.startScrapingJob() // ACTIVADO para producción
+    cronService.startBalizaUpdateJob() // ACTIVADO para producción
 
     // Ejecutar un scraping inicial
     // console.log('🔄 Ejecutando scraping inicial...')
