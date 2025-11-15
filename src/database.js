@@ -371,7 +371,9 @@ class DatabaseService {
 
           if (baliza.availableAt) {
             // Si tiene fecha de disponibilidad, calcular tiempo restante
-            timeRemaining = SpanishTime.timeRemaining(baliza.availableAt)
+            // USAR UTC DIRECTO para evitar problemas de zona horaria
+            const now = new Date()
+            timeRemaining = new Date(baliza.availableAt).getTime() - now.getTime()
 
             if (timeRemaining <= 0) {
               // Esta baliza ya debería estar disponible
