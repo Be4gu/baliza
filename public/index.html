@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rust Kickoff Tracker - Balizas</title>
+    <link rel="stylesheet" href="styles.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
+  </head>
+  <body>
+    <div class="container">
+      <header class="header">
+        <h1><i class="fas fa-crosshairs"></i> Estado de Balizas - Rust Kickoff</h1>
+        <p>Seguimiento en tiempo real del estado de las balizas</p>
+      </header>
+
+      <!-- Estado del Sistema -->
+      <section class="system-status" id="systemStatus">
+        <div class="status-card">
+          <i class="fas fa-robot"></i>
+          <span id="scrapingStatus">Conectando...</span>
+        </div>
+        <div class="status-card">
+          <i class="fas fa-database"></i>
+          <span id="dbStatus">Base de datos</span>
+        </div>
+        <div class="status-card">
+          <i class="fas fa-clock"></i>
+          <span id="lastUpdate">Última actualización</span>
+        </div>
+      </section>
+
+      <!-- Estado de Balizas -->
+      <div class="section-header">
+        <h2><i class="fas fa-flag"></i> Estado Actual de las Balizas</h2>
+        <button class="refresh-btn" onclick="loadBalizasStatus()"><i class="fas fa-sync-alt"></i> Actualizar</button>
+      </div>
+
+      <div class="balizas-grid" id="balizasGrid">
+        <div class="loading"><i class="fas fa-spinner fa-spin"></i> Cargando estado de balizas...</div>
+      </div>
+    </div>
+
+    <!-- Panel de Control -->
+    <div class="control-panel">
+      <button class="control-btn" onclick="runManualScraping()" title="Ejecutar scraping manual">
+        <i class="fas fa-play"></i>
+      </button>
+      <button class="control-btn" onclick="toggleAutoRefresh()" title="Auto-refresh" id="autoRefreshBtn">
+        <i class="fas fa-pause"></i>
+      </button>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

@@ -1,0 +1,48 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Event {
+  id              String   @id @default(cuid())
+  timestamp       DateTime
+  displayTime     String
+  eventCategory   String
+  eventType       String   // Cambiado de EventType a String para SQLite
+  teamName        String
+  teamColor       String?
+  playerName      String?
+  action          String
+  rawDescription  String
+  scrapedAt       DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Índices para optimizar consultas
+  @@index([timestamp])
+  @@index([eventType])
+  @@index([teamName])
+  @@index([scrapedAt])
+}
+
+model BalizaStatus {
+  id              String   @id @default(cuid())
+  balizaId        String   @unique // Identificador de la baliza específica
+  currentTeam     String?  // Equipo que la tiene actualmente
+  capturedAt      DateTime? // Cuándo fue capturada por última vez
+  availableAt     DateTime? // Cuándo estará disponible de nuevo (capturedAt + 1 hora)
+  isAvailable     Boolean  @default(true)
+  lastEventId     String?  // Referencia al último evento de esta baliza
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([balizaId])
+  @@index([isAvailable])
+}

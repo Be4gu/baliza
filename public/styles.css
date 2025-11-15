@@ -1,0 +1,384 @@
+/* Reset y estilos base */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d3748 100%);
+  color: #e2e8f0;
+  min-height: 100vh;
+  line-height: 1.6;
+}
+
+.container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: rgba(45, 55, 72, 0.8);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.header h1 {
+  color: #00ff88;
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+  text-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+}
+
+.header p {
+  color: #a0aec0;
+  font-size: 1.1rem;
+}
+
+/* Estado del sistema */
+.system-status {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.status-card {
+  background: rgba(45, 55, 72, 0.6);
+  padding: 15px 20px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-left: 4px solid #00ff88;
+}
+
+.status-card i {
+  color: #00ff88;
+  font-size: 1.2rem;
+}
+
+.status-card.warning {
+  border-left-color: #ffc107;
+}
+
+.status-card.warning i {
+  color: #ffc107;
+}
+
+.status-card.error {
+  border-left-color: #dc3545;
+}
+
+.status-card.error i {
+  color: #dc3545;
+}
+
+/* Encabezados de sección */
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.section-header h2 {
+  color: #00ff88;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Filtros */
+.filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.filters select,
+.filters input {
+  padding: 8px 12px;
+  border: 1px solid #4a5568;
+  border-radius: 6px;
+  background: #2d3748;
+  color: #e2e8f0;
+  font-size: 0.9rem;
+}
+
+.filters select:focus,
+.filters input:focus {
+  outline: none;
+  border-color: #00ff88;
+  box-shadow: 0 0 0 2px rgba(0, 255, 136, 0.2);
+}
+
+/* Botones */
+.refresh-btn,
+.control-btn {
+  background: #00ff88;
+  color: #1a1a1a;
+  border: none;
+  padding: 8px 15px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.refresh-btn:hover,
+.control-btn:hover {
+  background: #00e67a;
+  transform: translateY(-1px);
+}
+
+/* Grid de Balizas */
+.balizas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.baliza-card {
+  background: rgba(45, 55, 72, 0.8);
+  border-radius: 12px;
+  padding: 20px;
+  border-left: 4px solid #00ff88;
+  transition: all 0.3s ease;
+}
+
+.baliza-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.baliza-card.occupied {
+  border-left-color: #dc3545;
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.baliza-card.available {
+  border-left-color: #28a745;
+  background: rgba(40, 167, 69, 0.1);
+  border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.baliza-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.baliza-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #00ff88;
+}
+
+.baliza-status {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.baliza-status.available {
+  background: rgba(40, 167, 69, 0.2);
+  color: #28a745;
+}
+
+.baliza-status.occupied {
+  background: rgba(220, 53, 69, 0.2);
+  color: #dc3545;
+}
+
+.baliza-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.baliza-team {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.team-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.countdown {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #dc3545;
+  text-align: center;
+  margin-top: 15px;
+  padding: 15px;
+  background: rgba(220, 53, 69, 0.2);
+  border-radius: 8px;
+  border: 2px solid rgba(220, 53, 69, 0.4);
+  text-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
+  animation: pulse 2s infinite;
+}
+
+.countdown.available {
+  color: #28a745;
+  background: rgba(40, 167, 69, 0.2);
+  border-color: rgba(40, 167, 69, 0.4);
+  text-shadow: 0 0 10px rgba(40, 167, 69, 0.5);
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* Timeline de eventos */
+.events-timeline {
+  max-height: 600px;
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+/* Panel de control flotante */
+.control-panel {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1000;
+}
+
+.control-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.control-btn.active {
+  background: #dc3545;
+}
+
+/* Estados de carga */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px;
+  color: #a0aec0;
+  font-size: 1.1rem;
+}
+
+.loading i {
+  font-size: 1.5rem;
+  color: #00ff88;
+}
+
+/* Scrollbar personalizado */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(45, 55, 72, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #00ff88;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00e67a;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .container {
+    padding: 10px;
+  }
+
+  .header h1 {
+    font-size: 2rem;
+  }
+
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .filters {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .filters select,
+  .filters input {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .control-panel {
+    flex-direction: row;
+    bottom: 20px;
+    top: auto;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  .balizas-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .tabs {
+    flex-direction: column;
+  }
+
+  .tab-button {
+    justify-content: center;
+    padding: 10px;
+  }
+
+  .baliza-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+}
