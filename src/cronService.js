@@ -88,6 +88,13 @@ class CronService {
       // Guardar en base de datos
       const savedEvents = await this.database.saveEvents(events)
 
+      // Si hay eventos nuevos de baliza, ejecutar migración
+      const newBalizaEvents = savedEvents.filter((e) => e.eventType === 'BALIZA')
+      if (newBalizaEvents.length > 0) {
+        console.log(`🔄 ${newBalizaEvents.length} nuevos eventos de baliza - ejecutando migración...`)
+        await this.database.migrateBalizaEvents()
+      }
+
       // Estadísticas
       const duration = Date.now() - startTime
       this.lastRunTime = new Date()
