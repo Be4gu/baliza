@@ -72,31 +72,43 @@ async function loadBalizasStatus() {
   try {
     showLoading('balizasGrid')
 
+    console.log('🔍 Solicitando estado de balizas...')
     const response = await fetch('/api/balizas/status')
+    console.log('📡 Respuesta recibida:', response.status, response.statusText)
+
     const data = await response.json()
+    console.log('📊 Datos de balizas:', data)
 
     if (data.success) {
+      console.log(`✅ ${data.data.length} balizas recibidas`)
       displayBalizas(data.data)
     } else {
+      console.error('❌ Error en respuesta API:', data.error)
       showError('balizasGrid', 'Error cargando estado de balizas')
     }
   } catch (error) {
-    console.error('Error cargando balizas:', error)
+    console.error('❌ Error cargando balizas:', error)
     showError('balizasGrid', 'Error de conexión')
   }
 }
 
 function displayBalizas(balizas) {
+  console.log('🎯 Mostrando balizas:', balizas)
   const grid = document.getElementById('balizasGrid')
 
   // Si tenemos datos reales de balizas capturadas, mostrarlos
   if (balizas && balizas.length > 0) {
+    console.log(`📋 Procesando ${balizas.length} balizas`)
     // Usar datos reales directamente
     const html = balizas
-      .map((baliza) => {
+      .map((baliza, index) => {
+        console.log(`🔍 Procesando baliza ${index + 1}:`, baliza)
+
         const isAvailable = baliza.isCurrentlyAvailable
         const statusClass = isAvailable ? 'available' : 'occupied'
         const statusText = isAvailable ? 'Disponible' : 'Ocupada'
+
+        console.log(`   Estado: ${statusText}, Disponible: ${isAvailable}`)
 
         let countdownHtml = ''
         if (!isAvailable && baliza.timeRemaining) {
@@ -105,6 +117,7 @@ function displayBalizas(balizas) {
                       ${formatCountdown(baliza.timeRemaining)}
                   </div>
               `
+          console.log(`   Countdown: ${formatCountdown(baliza.timeRemaining)}`)
         }
 
         let teamInfo = ''
@@ -115,6 +128,7 @@ function displayBalizas(balizas) {
                       <span>${baliza.currentTeam}</span>
                   </div>
               `
+          console.log(`   Equipo: ${baliza.currentTeam}`)
         }
 
         let capturedInfo = ''
