@@ -460,6 +460,30 @@ app.post('/api/scraping/restart', (req, res) => {
   }
 })
 
+// ENDPOINT TEMPORAL - Forzar migración para Railway
+app.post('/api/force-migrate', async (req, res) => {
+  try {
+    console.log('🚀 FORZANDO MIGRACIÓN desde endpoint...')
+    await database.migrateBalizaEvents()
+
+    const status = await database.getBalizasStatus()
+
+    res.json({
+      success: true,
+      message: 'Migración ejecutada correctamente',
+      data: status.data
+    })
+
+    console.log('✅ Migración completada desde endpoint')
+  } catch (error) {
+    console.error('❌ Error en migración forzada:', error)
+    res.status(500).json({
+      success: false,
+      error: error.message
+    })
+  }
+})
+
 // === RUTAS DEL FRONTEND ===
 
 // Servir el frontend
