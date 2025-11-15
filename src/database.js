@@ -287,9 +287,9 @@ class DatabaseService {
         if (baliza) {
           // Verificar si la baliza ya expiró
           let timeRemaining = null
-          let isCurrentlyAvailable = false
+          let isCurrentlyAvailable = true // Por defecto disponible
 
-          if (baliza.availableAt) {
+          if (baliza.availableAt && !baliza.isAvailable) {
             timeRemaining = SpanishTime.timeRemaining(baliza.availableAt)
 
             if (timeRemaining <= 0) {
@@ -309,7 +309,14 @@ class DatabaseService {
                   lastEventId: null
                 }
               })
+            } else {
+              // Baliza aún ocupada
+              isCurrentlyAvailable = false
             }
+          } else if (baliza.isAvailable) {
+            // Baliza marcada como disponible
+            isCurrentlyAvailable = true
+            timeRemaining = null
           }
 
           balizasFijas.push({
