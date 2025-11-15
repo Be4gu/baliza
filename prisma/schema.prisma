@@ -34,8 +34,9 @@ model Event {
 
 model BalizaStatus {
   id              String   @id @default(cuid())
-  balizaId        String   @unique // Identificador de la baliza específica
+  balizaId        String   @unique // Identificador de la baliza específica (nombre del equipo)
   currentTeam     String?  // Equipo que la tiene actualmente
+  teamColor       String?  // Color del equipo que capturó la baliza
   capturedAt      DateTime? // Cuándo fue capturada por última vez
   availableAt     DateTime? // Cuándo estará disponible de nuevo (capturedAt + 1 hora)
   isAvailable     Boolean  @default(true)

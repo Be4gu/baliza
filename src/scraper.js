@@ -15,7 +15,11 @@ class RustKickoffScraper {
 
       const response = await axios.get(this.baseUrl, {
         headers: this.headers,
-        timeout: 10000
+        timeout: 8000, // Reducido de 10s a 8s para mayor eficiencia
+        maxRedirects: 3,
+        validateStatus: function (status) {
+          return status >= 200 && status < 300 // Solo aceptar códigos 2xx
+        }
       })
 
       const $ = cheerio.load(response.data)
@@ -60,6 +64,11 @@ class RustKickoffScraper {
           // Determinar tipo de evento basado en la acción
           const eventType = this.classifyEvent(action, eventCategory)
 
+          // Debug: imprimir eventos de balizas detectados
+          if (eventType === 'BALIZA') {
+            console.log(`🎯 BALIZA detectada: ${teamName} - ${action}`)
+          }
+
           const eventData = {
             timestamp: new Date(timeStr),
             displayTime: displayTime,
@@ -92,7 +101,7 @@ class RustKickoffScraper {
     const actionLower = action.toLowerCase()
 
     // Clasificar tipos de eventos comunes en Rust
-    if (actionLower.includes('baliza') || actionLower.includes('beacon')) {
+    if (actionLower.includes('baliza') || actionLower.includes('beacon') || actionLower.includes('captured an unclaimed beacon') || actionLower.includes('captured beacon')) {
       return 'BALIZA'
     }
 

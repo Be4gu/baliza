@@ -17,14 +17,24 @@ class CronService {
     console.log('🤖 Servicio de cron inicializado')
   }
 
-  // Scraping cada minuto
+  // Scraping configurable (30 segundos por defecto)
   startScrapingJob() {
-    console.log('⏰ Iniciando job de scraping cada minuto...')
+    const intervalSeconds = process.env.SCRAPE_INTERVAL_SECONDS || 30
+    console.log(`⏰ Iniciando job de scraping cada ${intervalSeconds} segundos...`)
 
-    // Ejecutar cada minuto: '*/1 * * * *'
-    // Para desarrollo/testing cada 30 segundos: '*/30 * * * * *'
+    // Crear patrón de cron basado en los segundos configurados
+    let cronPattern
+    if (intervalSeconds >= 60) {
+      // Si es 60 o más segundos, usar patrón de minutos
+      const minutes = Math.floor(intervalSeconds / 60)
+      cronPattern = `*/${minutes} * * * *`
+    } else {
+      // Si es menos de 60 segundos, usar patrón de segundos
+      cronPattern = `*/${intervalSeconds} * * * * *`
+    }
+
     this.scrapingJob = cron.schedule(
-      '*/1 * * * *',
+      cronPattern,
       async () => {
         if (this.isRunning) {
           console.log('⚠️  Scraping anterior aún en proceso, saltando esta ejecución')
@@ -35,11 +45,11 @@ class CronService {
       },
       {
         scheduled: true,
-        timezone: 'Europe/Madrid' // Ajusta según tu zona horaria
+        timezone: 'Europe/Madrid'
       }
     )
 
-    console.log('✅ Job de scraping programado cada minuto')
+    console.log(`✅ Job de scraping programado cada ${intervalSeconds} segundos`)
   }
 
   // Actualización de balizas cada 5 minutos

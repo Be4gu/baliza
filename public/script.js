@@ -1,6 +1,4 @@
 // Estado global de la aplicación
-let autoRefreshInterval = null
-let isAutoRefreshEnabled = true
 
 // Inicialización de la aplicación
 document.addEventListener('DOMContentLoaded', function () {
@@ -10,8 +8,8 @@ document.addEventListener('DOMContentLoaded', function () {
   loadSystemStatus()
   loadBalizasStatus()
 
-  // Configurar auto-refresh cada 30 segundos
-  startAutoRefresh()
+  // Solo configurar actualización de countdowns cada segundo
+  setInterval(updateAllCountdowns, 1000)
 
   console.log('✅ Aplicación lista')
 })
@@ -91,54 +89,111 @@ async function loadBalizasStatus() {
 function displayBalizas(balizas) {
   const grid = document.getElementById('balizasGrid')
 
-  if (!balizas || balizas.length === 0) {
-    grid.innerHTML = `
-            <div class="no-data">
-                <i class="fas fa-flag"></i>
-                <p>No se encontraron balizas</p>
-            </div>
-        `
-    return
-  }
+  // Si tenemos datos reales de balizas capturadas, mostrarlos
+  if (balizas && balizas.length > 0) {
+    // Usar datos reales directamente
+    const html = balizas
+      .map((baliza) => {
+        const isAvailable = baliza.isCurrentlyAvailable
+        const statusClass = isAvailable ? 'available' : 'occupied'
+        const statusText = isAvailable ? 'Disponible' : 'Ocupada'
 
-  const html = balizas
-    .map((baliza) => {
-      const isAvailable = baliza.isCurrentlyAvailable
-      const statusClass = isAvailable ? 'available' : 'occupied'
-      const statusText = isAvailable ? 'Disponible' : 'Ocupada'
+        let countdownHtml = ''
+        if (!isAvailable && baliza.timeRemaining) {
+          countdownHtml = `
+                  <div class="countdown" data-time="${baliza.timeRemaining}">
+                      ${formatCountdown(baliza.timeRemaining)}
+                  </div>
+              `
+        }
 
-      let countdownHtml = ''
-      if (!isAvailable && baliza.timeRemaining) {
-        countdownHtml = `
+        let teamInfo = ''
+        if (baliza.currentTeam) {
+          teamInfo = `
+                  <div class="baliza-team">
+                      <div class="team-color" style="background-color: ${baliza.teamColor || '#666'}"></div>
+                      <span>${baliza.currentTeam}</span>
+                  </div>
+              `
+        }
+
+        let capturedInfo = ''
+        if (baliza.capturedAt) {
+          capturedInfo = `
+                  <div class="baliza-info">
+                      <small>Capturada: ${formatDateTime(baliza.capturedAt)}</small>
+                  </div>
+              `
+        }
+
+        return `
+              <div class="baliza-card ${statusClass}">
+                  <div class="baliza-header">
+                      <div class="baliza-name">${baliza.displayName || baliza.currentTeam || formatBalizaName(baliza.balizaId)}</div>
+                      <div class="baliza-status ${statusClass}">${statusText}</div>
+                  </div>
+                  
+                  ${teamInfo}
+                  ${capturedInfo}
+                  ${countdownHtml}
+              </div>
+          `
+      })
+      .join('')
+
+    grid.innerHTML = html
+  } else {
+    // Si no hay datos, mostrar 5 balizas predeterminadas vacías
+    const defaultBalizas = []
+    for (let i = 1; i <= 5; i++) {
+      defaultBalizas.push({
+        balizaId: i,
+        isCurrentlyAvailable: true,
+        currentTeam: null,
+        capturedAt: null,
+        timeRemaining: null,
+        teamColor: null
+      })
+    }
+
+    const html = defaultBalizas
+      .map((baliza) => {
+        const isAvailable = baliza.isCurrentlyAvailable
+        const statusClass = isAvailable ? 'available' : 'occupied'
+        const statusText = isAvailable ? 'Disponible' : 'Ocupada'
+
+        let countdownHtml = ''
+        if (!isAvailable && baliza.timeRemaining) {
+          countdownHtml = `
                 <div class="countdown" data-time="${baliza.timeRemaining}">
                     ${formatCountdown(baliza.timeRemaining)}
                 </div>
             `
-      }
+        }
 
-      let teamInfo = ''
-      if (baliza.currentTeam) {
-        teamInfo = `
+        let teamInfo = ''
+        if (baliza.currentTeam) {
+          teamInfo = `
                 <div class="baliza-team">
                     <div class="team-color" style="background-color: ${baliza.teamColor || '#666'}"></div>
                     <span>${baliza.currentTeam}</span>
                 </div>
             `
-      }
+        }
 
-      let capturedInfo = ''
-      if (baliza.capturedAt) {
-        capturedInfo = `
+        let capturedInfo = ''
+        if (baliza.capturedAt) {
+          capturedInfo = `
                 <div class="baliza-info">
                     <small>Capturada: ${formatDateTime(baliza.capturedAt)}</small>
                 </div>
             `
-      }
+        }
 
-      return `
+        return `
             <div class="baliza-card ${statusClass}">
                 <div class="baliza-header">
-                    <div class="baliza-name">${formatBalizaName(baliza.balizaId)}</div>
+                    <div class="baliza-name">${baliza.displayName || baliza.currentTeam || formatBalizaName(baliza.balizaId)}</div>
                     <div class="baliza-status ${statusClass}">${statusText}</div>
                 </div>
                 
@@ -147,17 +202,29 @@ function displayBalizas(balizas) {
                 ${countdownHtml}
             </div>
         `
-    })
-    .join('')
+      })
+      .join('')
 
-  grid.innerHTML = html
+    grid.innerHTML = html
+  }
 
   // Iniciar countdown timers
   startCountdownTimers()
 }
 
 function formatBalizaName(balizaId) {
-  return balizaId.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
+  // Si el balizaId es un nombre de equipo, devolverlo tal como está
+  if (balizaId && balizaId.toLowerCase().includes('team')) {
+    return balizaId
+  }
+
+  // Si es un número (de las predeterminadas), devolver formato de baliza
+  if (!isNaN(balizaId)) {
+    return `Baliza ${String.fromCharCode(64 + parseInt(balizaId))}` // A, B, C, D, E
+  }
+
+  // Fallback para otros casos
+  return balizaId ? balizaId.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()) : 'Baliza'
 }
 
 function startCountdownTimers() {
@@ -469,43 +536,6 @@ async function runManualScraping() {
     console.error('Error ejecutando scraping manual:', error)
     showNotification('Error de conexión', 'error')
   }
-}
-
-function toggleAutoRefresh() {
-  const btn = document.getElementById('autoRefreshBtn')
-
-  if (isAutoRefreshEnabled) {
-    stopAutoRefresh()
-    btn.innerHTML = '<i class="fas fa-play"></i>'
-    btn.classList.add('active')
-    isAutoRefreshEnabled = false
-    showNotification('Auto-refresh desactivado', 'info')
-  } else {
-    startAutoRefresh()
-    btn.innerHTML = '<i class="fas fa-pause"></i>'
-    btn.classList.remove('active')
-    isAutoRefreshEnabled = true
-    showNotification('Auto-refresh activado', 'success')
-  }
-}
-
-function startAutoRefresh() {
-  if (autoRefreshInterval) return
-
-  autoRefreshInterval = setInterval(() => {
-    loadSystemStatus()
-    loadBalizasStatus()
-  }, 30000) // 30 segundos
-
-  isAutoRefreshEnabled = true
-}
-
-function stopAutoRefresh() {
-  if (autoRefreshInterval) {
-    clearInterval(autoRefreshInterval)
-    autoRefreshInterval = null
-  }
-  isAutoRefreshEnabled = false
 }
 
 // === UTILIDADES ===

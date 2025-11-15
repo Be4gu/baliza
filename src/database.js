@@ -53,7 +53,12 @@ class DatabaseService {
 
           // Si es un evento de baliza, actualizar el estado de la baliza
           if (event.eventType === 'BALIZA') {
-            await this.updateBalizaStatus(event)
+            console.log(`🔄 Procesando evento de baliza: ${event.teamName} - ${event.action}`)
+            // Pasar el evento con el ID actualizado
+            await this.updateBalizaStatus({
+              ...event,
+              id: savedEvent.id
+            })
           }
         } else {
           console.log(`⚠️  Evento duplicado encontrado (timestamp: ${event.timestamp}, team: ${event.teamName})`)
@@ -71,37 +76,116 @@ class DatabaseService {
   // Actualizar estado de balizas
   async updateBalizaStatus(balizaEvent) {
     try {
-      // Extraer identificador de baliza del evento (esto puede necesitar ajuste según el formato real)
-      const balizaId = this.extractBalizaId(balizaEvent.action)
-
-      if (!balizaId) return
+      console.log(`🔄 Datos del evento de baliza:`, {
+        teamName: balizaEvent.teamName,
+        timestamp: balizaEvent.timestamp,
+        teamColor: balizaEvent.teamColor,
+        eventId: balizaEvent.id
+      })
 
       const capturedAt = balizaEvent.timestamp
       // Balizas ocupadas por 60 minutos (1 hora)
       const availableAt = addHours(capturedAt, 1)
 
-      await this.prisma.balizaStatus.upsert({
-        where: { balizaId },
+      // Buscar una baliza disponible para asignar al equipo
+      let assignedBalizaId = null
+
+      // Primero, buscar si hay balizas completamente libres
+      for (let i = 1; i <= 5; i++) {
+        const balizaId = `Baliza_${i}`
+
+        const existingBaliza = await this.prisma.balizaStatus.findUnique({
+          where: { balizaId }
+        })
+
+        // Si la baliza no existe o está disponible, asignarla
+        if (!existingBaliza || existingBaliza.isAvailable || SpanishTime.isPast(existingBaliza.availableAt)) {
+          assignedBalizaId = balizaId
+          break
+        }
+      }
+
+      if (!assignedBalizaId) {
+        // Si no hay balizas disponibles, tomar la que expire más pronto
+        const oldestBaliza = await this.prisma.balizaStatus.findFirst({
+          orderBy: { availableAt: 'asc' }
+        })
+        if (oldestBaliza) {
+          assignedBalizaId = oldestBaliza.balizaId
+        } else {
+          // Fallback: asignar Baliza_1
+          assignedBalizaId = 'Baliza_1'
+        }
+      }
+
+      console.log(`📝 Asignando ${assignedBalizaId} a ${balizaEvent.teamName} hasta ${availableAt}`)
+
+      const result = await this.prisma.balizaStatus.upsert({
+        where: { balizaId: assignedBalizaId },
         update: {
           currentTeam: balizaEvent.teamName,
           capturedAt,
           availableAt,
           isAvailable: false,
-          lastEventId: balizaEvent.id || null
+          lastEventId: balizaEvent.id || null,
+          teamColor: balizaEvent.teamColor
         },
         create: {
-          balizaId,
+          balizaId: assignedBalizaId,
           currentTeam: balizaEvent.teamName,
           capturedAt,
           availableAt,
           isAvailable: false,
-          lastEventId: balizaEvent.id || null
+          lastEventId: balizaEvent.id || null,
+          teamColor: balizaEvent.teamColor
         }
       })
 
-      console.log(`🎯 Actualizado estado de baliza ${balizaId} para equipo ${balizaEvent.teamName}`)
+      console.log(`🎯 ${assignedBalizaId} actualizada exitosamente:`, result.id)
+
+      console.log(`🎯 Actualizado estado de ${assignedBalizaId} para equipo ${balizaEvent.teamName}`)
     } catch (error) {
       console.error('❌ Error actualizando estado de baliza:', error)
+    }
+  }
+
+  // Migrar eventos de balizas existentes para crear registros de BalizaStatus
+  async migrateBalizaEvents() {
+    try {
+      console.log('🔄 Migrando eventos de balizas existentes...')
+
+      // PASO 1: Limpiar BalizaStatus existentes (formato antiguo)
+      console.log('🧹 Limpiando registros de balizas con formato antiguo...')
+      await this.prisma.balizaStatus.deleteMany({
+        where: {
+          balizaId: {
+            not: {
+              startsWith: 'Baliza_'
+            }
+          }
+        }
+      })
+
+      // PASO 2: Obtener todos los eventos de balizas que no han sido procesados
+      const balizaEvents = await this.prisma.event.findMany({
+        where: {
+          eventType: 'BALIZA'
+        },
+        orderBy: {
+          timestamp: 'desc'
+        }
+      })
+
+      console.log(`📊 Encontrados ${balizaEvents.length} eventos de balizas para procesar`)
+
+      for (const event of balizaEvents) {
+        console.log(`🔄 Procesando evento de baliza: ${event.teamName} - ${event.timestamp}`)
+        await this.updateBalizaStatus(event)
+      }
+
+      console.log(`✅ Migración completada`)
+    } catch (error) {
+      console.error('❌ Error migrando eventos de balizas:', error)
     }
   }
 
@@ -188,35 +272,76 @@ class DatabaseService {
   // Obtener estado actual de todas las balizas
   async getBalizasStatus() {
     try {
-      const balizas = await this.prisma.balizaStatus.findMany({
-        orderBy: { balizaId: 'asc' }
-      })
-
-      // Calcular tiempo restante para cada baliza usando hora española
       const now = SpanishTime.now()
-      const balizasWithCountdown = balizas.map((baliza) => {
-        let timeRemaining = null
-        let isCurrentlyAvailable = baliza.isAvailable
+      const balizasFijas = []
 
-        if (!baliza.isAvailable && baliza.availableAt) {
-          // Usar la función de tiempo restante de SpanishTime
-          timeRemaining = SpanishTime.timeRemaining(baliza.availableAt)
+      // Asegurar que existen las 5 balizas y obtener su estado
+      for (let i = 1; i <= 5; i++) {
+        const balizaId = `Baliza_${i}`
 
-          if (timeRemaining <= 0) {
-            // Ya debería estar disponible, marcar para próximo ciclo
-            isCurrentlyAvailable = true
-            timeRemaining = 0
+        // Buscar la baliza en la base de datos
+        let baliza = await this.prisma.balizaStatus.findUnique({
+          where: { balizaId }
+        })
+
+        if (baliza) {
+          // Verificar si la baliza ya expiró
+          let timeRemaining = null
+          let isCurrentlyAvailable = false
+
+          if (baliza.availableAt) {
+            timeRemaining = SpanishTime.timeRemaining(baliza.availableAt)
+
+            if (timeRemaining <= 0) {
+              // Esta baliza ya debería estar disponible
+              isCurrentlyAvailable = true
+              timeRemaining = 0
+
+              // Actualizar el estado en la base de datos
+              baliza = await this.prisma.balizaStatus.update({
+                where: { balizaId },
+                data: {
+                  isAvailable: true,
+                  currentTeam: null,
+                  teamColor: null,
+                  capturedAt: null,
+                  availableAt: null,
+                  lastEventId: null
+                }
+              })
+            }
           }
-        }
 
-        return {
-          ...baliza,
-          timeRemaining,
-          isCurrentlyAvailable
-        }
-      })
+          balizasFijas.push({
+            ...baliza,
+            timeRemaining,
+            isCurrentlyAvailable,
+            displayName: baliza.currentTeam || 'Disponible'
+          })
+        } else {
+          // Crear una baliza disponible si no existe
+          baliza = await this.prisma.balizaStatus.create({
+            data: {
+              balizaId,
+              currentTeam: null,
+              teamColor: null,
+              capturedAt: null,
+              availableAt: null,
+              isAvailable: true,
+              lastEventId: null
+            }
+          })
 
-      return balizasWithCountdown
+          balizasFijas.push({
+            ...baliza,
+            timeRemaining: null,
+            isCurrentlyAvailable: true,
+            displayName: 'Disponible'
+          })
+        }
+      }
+
+      return balizasFijas
     } catch (error) {
       console.error('❌ Error obteniendo estado de balizas:', error)
       throw error

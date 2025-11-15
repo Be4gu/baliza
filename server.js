@@ -120,7 +120,11 @@ app.get('/api/scraping/status', (req, res) => {
 
     res.json({
       success: true,
-      data: status
+      data: {
+        ...status,
+        author: 'Entrellaves',
+        version: '1.0.0'
+      }
     })
   } catch (error) {
     console.error('Error obteniendo estado del scraping:', error)
@@ -145,6 +149,24 @@ app.post('/api/scraping/run', async (req, res) => {
     res.status(500).json({
       success: false,
       error: 'Error ejecutando scraping'
+    })
+  }
+})
+
+// Migrar eventos de balizas existentes
+app.post('/api/balizas/migrate', async (req, res) => {
+  try {
+    await database.migrateBalizaEvents()
+
+    res.json({
+      success: true,
+      message: 'Migración de eventos de balizas completada'
+    })
+  } catch (error) {
+    console.error('Error migrando eventos de balizas:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Error en la migración'
     })
   }
 })
@@ -184,9 +206,14 @@ app.get('*', (req, res) => {
 async function startServer() {
   try {
     console.log('🚀 Iniciando servidor Rust Kickoff Tracker...')
+    console.log('👤 Creado por Entrellaves')
 
     // Conectar a la base de datos
     await database.connect()
+
+    // Ejecutar migración de eventos de balizas existentes
+    console.log('🔄 Migrando eventos de balizas existentes...')
+    await database.migrateBalizaEvents()
 
     // Inicializar y empezar servicios de cron
     await cronService.init()

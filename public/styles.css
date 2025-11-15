@@ -11,9 +11,29 @@ body {
   color: #e2e8f0;
   min-height: 100vh;
   line-height: 1.6;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Icono bandera española */
+.spanish-flag {
+  color: #c41e3a !important;
+  text-shadow: 1px 1px 0 #ffc400, -1px -1px 0 #ffc400, 1px -1px 0 #ffc400, -1px 1px 0 #ffc400, 0 0 5px rgba(255, 196, 0, 0.5);
+  animation: wave 2s ease-in-out infinite;
+}
+
+@keyframes wave {
+  0%,
+  100% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(5deg);
+  }
 }
 
 .container {
+  flex: 1;
   max-width: 1400px;
   margin: 0 auto;
   padding: 20px;
@@ -39,6 +59,44 @@ body {
 .header p {
   color: #a0aec0;
   font-size: 1.1rem;
+}
+
+.credits {
+  margin-top: 15px;
+  padding: 8px 16px;
+  background: rgba(0, 255, 136, 0.1);
+  border: 1px solid rgba(0, 255, 136, 0.3);
+  border-radius: 20px;
+  color: #00ff88;
+  font-size: 0.9rem;
+  display: inline-block;
+}
+
+.credits strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Footer */
+.footer {
+  margin-top: auto;
+  padding: 20px;
+  text-align: center;
+  background: rgba(45, 55, 72, 0.8);
+  border-radius: 12px;
+  border-top: 2px solid rgba(0, 255, 136, 0.3);
+  flex-shrink: 0;
+}
+
+.footer p {
+  color: #a0aec0;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.footer strong {
+  color: #00ff88;
+  font-weight: 600;
 }
 
 /* Estado del sistema */
@@ -148,8 +206,37 @@ body {
 /* Grid de Balizas */
 .balizas-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Responsive design mejorado */
+@media (max-width: 768px) {
+  .balizas-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .balizas-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1025px) and (max-width: 1400px) {
+  .balizas-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1401px) {
+  .balizas-grid {
+    grid-template-columns: repeat(5, 1fr);
+    max-width: 1600px;
+  }
 }
 
 .baliza-card {
@@ -185,15 +272,15 @@ body {
 }
 
 .baliza-name {
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   font-weight: 600;
   color: #00ff88;
 }
 
 .baliza-status {
-  padding: 4px 12px;
+  padding: 6px 16px;
   border-radius: 20px;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   font-weight: 600;
   text-transform: uppercase;
 }
@@ -212,12 +299,21 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  font-size: 0.95rem;
+}
+
+.baliza-info small {
+  font-size: 0.9rem;
+  color: #aaa;
+  font-weight: 500;
 }
 
 .baliza-team {
   display: flex;
   align-items: center;
   gap: 8px;
+  font-size: 1rem;
+  font-weight: 500;
 }
 
 .team-color {
@@ -333,8 +429,17 @@ body {
     padding: 10px;
   }
 
+  .header {
+    margin-bottom: 20px;
+    padding: 15px;
+  }
+
   .header h1 {
-    font-size: 2rem;
+    font-size: 1.8rem;
+  }
+
+  .header p {
+    font-size: 0.9rem;
   }
 
   .section-header {
@@ -363,10 +468,66 @@ body {
 
   .balizas-grid {
     grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .baliza-card {
+    padding: 15px;
+  }
+
+  .baliza-name {
+    font-size: 1.2rem;
+  }
+
+  .countdown {
+    font-size: 1.5rem;
+    padding: 10px;
   }
 }
 
 @media (max-width: 480px) {
+  .container {
+    padding: 8px;
+  }
+
+  .header {
+    padding: 12px;
+  }
+
+  .header h1 {
+    font-size: 1.5rem;
+  }
+
+  .header p {
+    font-size: 0.8rem;
+  }
+
+  .balizas-grid {
+    gap: 12px;
+  }
+
+  .baliza-card {
+    padding: 12px;
+  }
+
+  .baliza-name {
+    font-size: 1.1rem;
+  }
+
+  .baliza-status {
+    font-size: 0.8rem;
+    padding: 4px 12px;
+  }
+
+  .baliza-team {
+    font-size: 0.9rem;
+  }
+
+  .countdown {
+    font-size: 1.3rem;
+    padding: 8px;
+  }
+
   .tabs {
     flex-direction: column;
   }

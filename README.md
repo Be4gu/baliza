@@ -258,4 +258,4 @@ Este proyecto es para fines educativos y de entretenimiento. Asegúrate de cumpl
 
 ---
 
-Desarrollado con ❤️ para la comunidad de Rust
+Desarrollado con ❤️ por **Entrellaves** para la comunidad de Rust
