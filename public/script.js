@@ -103,12 +103,16 @@ function displayBalizas(balizas) {
     const html = balizas
       .map((baliza, index) => {
         console.log(`🔍 Procesando baliza ${index + 1}:`, baliza)
+        console.log(`   - isCurrentlyAvailable: ${baliza.isCurrentlyAvailable}`)
+        console.log(`   - isAvailable: ${baliza.isAvailable}`)
+        console.log(`   - currentTeam: ${baliza.currentTeam}`)
+        console.log(`   - teamColor: ${baliza.teamColor}`)
 
         const isAvailable = baliza.isCurrentlyAvailable
         const statusClass = isAvailable ? 'available' : 'occupied'
         const statusText = isAvailable ? 'Disponible' : 'Ocupada'
 
-        console.log(`   Estado: ${statusText}, Disponible: ${isAvailable}`)
+        console.log(`   Estado final: ${statusText}, Clase: ${statusClass}, Disponible: ${isAvailable}`)
 
         let countdownHtml = ''
         if (!isAvailable && baliza.timeRemaining) {
@@ -245,13 +249,13 @@ function startCountdownTimers() {
   const countdowns = document.querySelectorAll('.countdown[data-time]')
 
   countdowns.forEach((countdown) => {
-    const availableTime = parseInt(countdown.dataset.time)
-    const startTime = Date.now()
+    const timeRemainingMs = parseInt(countdown.dataset.time) // milisegundos restantes
+    const startTime = Date.now() // cuando empezó el countdown
+    const endTime = startTime + timeRemainingMs // timestamp absoluto de cuando expira
 
     const updateCountdown = () => {
       const now = Date.now()
-      const elapsed = now - startTime
-      const remaining = availableTime - elapsed
+      const remaining = endTime - now // tiempo restante real
 
       if (remaining <= 0) {
         countdown.innerHTML = '<i class="fas fa-check-circle"></i> ¡DISPONIBLE!'
@@ -260,7 +264,7 @@ function startCountdownTimers() {
 
         // Recargar datos después de 2 segundos
         setTimeout(() => {
-          if (currentTab === 'balizas') {
+          if (typeof currentTab !== 'undefined' && currentTab === 'balizas') {
             loadBalizasStatus()
           }
         }, 2000)

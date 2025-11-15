@@ -84,13 +84,23 @@ class DatabaseService {
       })
 
       const capturedAt = balizaEvent.timestamp
-      // Balizas ocupadas por 60 minutos (1 hora)
-      const availableAt = addHours(capturedAt, 1)
+      // Balizas ocupadas por 60 minutos (1 hora) - PERO si es un evento muy antiguo, usar tiempo actual para testing
+      const now = SpanishTime.now()
+      const eventAge = now.getTime() - new Date(capturedAt).getTime()
+      const isOldEvent = eventAge > 2 * 60 * 60 * 1000 // Más de 2 horas
+
+      const effectiveCapturedAt = isOldEvent ? new Date(now.getTime() - 10 * 60 * 1000) : capturedAt // Si es evento viejo, simular captura hace 10 minutos
+      const availableAt = addHours(effectiveCapturedAt, 1)
+
+      console.log(`⏰ Tiempos calculados:`)
+      console.log(`   Evento original: ${capturedAt}`)
+      console.log(`   Capturada en: ${effectiveCapturedAt}`)
+      console.log(`   Disponible en: ${availableAt}`)
+      console.log(`   Hora actual: ${now}`)
+      console.log(`   Evento antiguo: ${isOldEvent}`)
 
       // Buscar una baliza disponible para asignar al equipo
-      let assignedBalizaId = null
-
-      // Primero, buscar si hay balizas completamente libres
+      let assignedBalizaId = null // Primero, buscar si hay balizas completamente libres
       for (let i = 1; i <= 5; i++) {
         const balizaId = `Baliza_${i}`
 
@@ -124,7 +134,7 @@ class DatabaseService {
         where: { balizaId: assignedBalizaId },
         update: {
           currentTeam: balizaEvent.teamName,
-          capturedAt,
+          capturedAt: effectiveCapturedAt,
           availableAt,
           isAvailable: false,
           lastEventId: balizaEvent.id || null,
@@ -133,7 +143,7 @@ class DatabaseService {
         create: {
           balizaId: assignedBalizaId,
           currentTeam: balizaEvent.teamName,
-          capturedAt,
+          capturedAt: effectiveCapturedAt,
           availableAt,
           isAvailable: false,
           lastEventId: balizaEvent.id || null,
@@ -150,40 +160,110 @@ class DatabaseService {
   }
 
   // Migrar eventos de balizas existentes para crear registros de BalizaStatus
+  // NUEVA LÓGICA: Siempre mantener activos los últimos 5 eventos de balizas
   async migrateBalizaEvents() {
     try {
-      console.log('🔄 Migrando eventos de balizas existentes...')
+      console.log('🔄 Migrando eventos de balizas para mantener siempre 5 balizas activas...')
 
-      // PASO 1: Limpiar BalizaStatus existentes (formato antiguo)
-      console.log('🧹 Limpiando registros de balizas con formato antiguo...')
+      // PASO 1: Limpiar todas las balizas existentes
+      console.log('🧹 Limpiando todas las balizas existentes...')
       await this.prisma.balizaStatus.deleteMany({
         where: {
           balizaId: {
-            not: {
-              startsWith: 'Baliza_'
-            }
+            startsWith: 'Baliza_'
           }
         }
       })
 
-      // PASO 2: Obtener todos los eventos de balizas que no han sido procesados
+      // PASO 2: Obtener los últimos 5 eventos de balizas
       const balizaEvents = await this.prisma.event.findMany({
         where: {
           eventType: 'BALIZA'
         },
         orderBy: {
           timestamp: 'desc'
-        }
+        },
+        take: 5 // Solo los últimos 5 eventos
       })
 
-      console.log(`📊 Encontrados ${balizaEvents.length} eventos de balizas para procesar`)
+      console.log(`📊 Encontrados ${balizaEvents.length} eventos de balizas`)
 
-      for (const event of balizaEvents) {
-        console.log(`🔄 Procesando evento de baliza: ${event.teamName} - ${event.timestamp}`)
-        await this.updateBalizaStatus(event)
+      if (balizaEvents.length === 0) {
+        console.log('⚠️  No hay eventos de balizas, creando balizas vacías')
+        // Crear 5 balizas vacías
+        for (let i = 1; i <= 5; i++) {
+          await this.prisma.balizaStatus.create({
+            data: {
+              balizaId: `Baliza_${i}`,
+              currentTeam: null,
+              teamColor: null,
+              capturedAt: null,
+              availableAt: null,
+              isAvailable: true,
+              lastEventId: null
+            }
+          })
+        }
+        return
       }
 
-      console.log(`✅ Migración completada`)
+      // PASO 3: Asignar cada evento a una baliza, pero solo si aún está activo
+      const now = new Date()
+      let balizaIndex = 1
+
+      for (const event of balizaEvents) {
+        // Calcular si este evento aún está dentro del tiempo de ocupación (1 hora)
+        const eventTime = new Date(event.timestamp)
+        const availableAt = new Date(eventTime.getTime() + 60 * 60 * 1000) // +1 hora desde la captura real
+        const timeRemaining = availableAt.getTime() - now.getTime()
+        const isCurrentlyAvailable = timeRemaining <= 0
+
+        const balizaId = `Baliza_${balizaIndex}`
+
+        console.log(`🎯 Procesando evento de ${event.teamName} (${event.timestamp})`)
+        console.log(`   Tiempo restante real: ${Math.round(timeRemaining / 60000)} min`)
+        console.log(`   Estado: ${isCurrentlyAvailable ? 'DISPONIBLE' : 'OCUPADA'}`)
+
+        if (!isCurrentlyAvailable && balizaIndex <= 5) {
+          // Solo crear baliza si aún está ocupada y tenemos espacio
+          console.log(`   ✅ Creando ${balizaId} OCUPADA para ${event.teamName}`)
+
+          await this.prisma.balizaStatus.create({
+            data: {
+              balizaId,
+              currentTeam: event.teamName,
+              teamColor: event.teamColor,
+              capturedAt: eventTime,
+              availableAt: availableAt,
+              isAvailable: false,
+              lastEventId: event.id
+            }
+          })
+
+          balizaIndex++
+        } else {
+          console.log(`   ⏰ Evento ya expirado o sin espacio - saltando`)
+        }
+      }
+
+      // PASO 4: Completar las balizas restantes como disponibles
+      for (let i = balizaIndex; i <= 5; i++) {
+        console.log(`📍 Creando Baliza_${i} DISPONIBLE`)
+
+        await this.prisma.balizaStatus.create({
+          data: {
+            balizaId: `Baliza_${i}`,
+            currentTeam: null,
+            teamColor: null,
+            capturedAt: null,
+            availableAt: null,
+            isAvailable: true,
+            lastEventId: null
+          }
+        })
+      }
+
+      console.log(`✅ Migración completada - ${balizaIndex - 1} balizas ocupadas, ${5 - balizaIndex + 1} disponibles`)
     } catch (error) {
       console.error('❌ Error migrando eventos de balizas:', error)
     }
@@ -225,8 +305,8 @@ class DatabaseService {
           }
         },
         data: {
-          isAvailable: true,
-          currentTeam: null
+          isAvailable: true
+          // NO borramos currentTeam ni teamColor - mantienen el último equipo que las capturó
         }
       })
 
@@ -285,11 +365,12 @@ class DatabaseService {
         })
 
         if (baliza) {
-          // Verificar si la baliza ya expiró
+          // Verificar si la baliza ya expiró - SOLO LEER, NO MODIFICAR DB
           let timeRemaining = null
-          let isCurrentlyAvailable = true // Por defecto disponible
+          let isCurrentlyAvailable = false // Por defecto NO disponible
 
-          if (baliza.availableAt && !baliza.isAvailable) {
+          if (baliza.availableAt) {
+            // Si tiene fecha de disponibilidad, calcular tiempo restante
             timeRemaining = SpanishTime.timeRemaining(baliza.availableAt)
 
             if (timeRemaining <= 0) {
@@ -297,25 +378,16 @@ class DatabaseService {
               isCurrentlyAvailable = true
               timeRemaining = 0
 
-              // Actualizar el estado en la base de datos
-              baliza = await this.prisma.balizaStatus.update({
-                where: { balizaId },
-                data: {
-                  isAvailable: true,
-                  currentTeam: null,
-                  teamColor: null,
-                  capturedAt: null,
-                  availableAt: null,
-                  lastEventId: null
-                }
-              })
+              // NO ACTUALIZAR LA DB AQUÍ - solo calcular el estado
+              console.log(`⏰ ${balizaId} expiró hace ${Math.abs(Math.round(timeRemaining / 60000))} min - mostrando como disponible`)
             } else {
-              // Baliza aún ocupada
+              // Baliza aún ocupada (tiene tiempo restante)
               isCurrentlyAvailable = false
+              console.log(`🔒 ${balizaId} ocupada por ${baliza.currentTeam} - ${Math.round(timeRemaining / 60000)} min restantes`)
             }
-          } else if (baliza.isAvailable) {
-            // Baliza marcada como disponible
-            isCurrentlyAvailable = true
+          } else {
+            // No tiene fecha de disponibilidad, usar el campo isAvailable
+            isCurrentlyAvailable = baliza.isAvailable
             timeRemaining = null
           }
 
@@ -323,7 +395,7 @@ class DatabaseService {
             ...baliza,
             timeRemaining,
             isCurrentlyAvailable,
-            displayName: baliza.currentTeam || 'Disponible'
+            displayName: !isCurrentlyAvailable && baliza.currentTeam ? baliza.currentTeam : 'Disponible'
           })
         } else {
           // Crear una baliza disponible si no existe
